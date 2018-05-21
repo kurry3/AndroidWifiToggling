@@ -2,7 +2,6 @@ package com.example.rflab_dell_8.wificontroller;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 import android.widget.EditText;
-import android.view.View;
 import android.os.Handler;
 import android.os.Bundle;
 import java.text.SimpleDateFormat;
@@ -32,12 +31,16 @@ public class MainActivity extends AppCompatActivity {
         toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
         tvTimer = (TextView) findViewById(R.id.tvTimer);
         wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        
+        //find the initial wifi state 
         boolean wifiStatus = wifimanager.isWifiEnabled();
         if (wifiStatus) {
             wifiStatusText.setText("WiFi is ON");
         } else {
             wifiStatusText.setText("WiFi is OFF");
         }
+        
+        //execute class wifiRunnable, passing in the initial wifi status
         final wifiRunnable obj = new wifiRunnable(wifiStatus);
         // Put listener on toggle button
         toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -84,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 wifimanager.setWifiEnabled(false);
                 nextState = true;
             }
+            //change delayMillis to change the delay of the toggling
             wifiHandler.postDelayed(this, 15000);
         }
     }
