@@ -10,6 +10,8 @@ import java.util.TimeZone;
 import android.os.SystemClock;
 import android.net.wifi.WifiManager;
 import android.content.Context;
+import android.widget.ToggleButton;
+import android.widget.CompoundButton;
 
 public class MainActivity extends AppCompatActivity {
     WifiManager wifimanager;
@@ -19,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     long startTime, timeInMilliseconds = 0;
     Handler timerHandler = new Handler();
     Handler wifiHandler = new Handler();
+    ToggleButton toggleButton;
 
     @Override
 
@@ -26,59 +29,62 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         wifiStatusText = (TextView) findViewById(R.id.text_view);
+        toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
         tvTimer = (TextView) findViewById(R.id.tvTimer);
+        wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        boolean wifiStatus = wifimanager.isWifiEnabled();
+        if (wifiStatus) {
+            wifiStatusText.setText("WiFi is ON");
+        } else {
+            wifiStatusText.setText("WiFi is OFF");
+        }
+        final wifiRunnable obj = new wifiRunnable(wifiStatus);
+        // Put listener on toggle button
+        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
+                if (checked) {
+                    startTime = SystemClock.uptimeMillis();
+                    timerHandler.postDelayed(updateTimerThread, 0);
+                    wifiHandler.postDelayed(obj,0);
+                } else {
+                    timerHandler.removeCallbacks(updateTimerThread);
+                    wifiHandler.removeCallbacks(obj);
+                }
+            }
+        });
     }
-
     public static String getDateFromMillis(long d) {
         SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
         df.setTimeZone(TimeZone.getTimeZone("GMT"));
         return df.format(d);
     }
-
-    public void start(View v) {
-        startTime = SystemClock.uptimeMillis();
-        timerHandler.postDelayed(updateTimerThread, 0);
-        wifiHandler.postDelayed(wifiRunnable, 0);
-    }
-
-    public void stop(View v) {
-        timerHandler.removeCallbacks(updateTimerThread);
-        //wifiHandler.removeCallbacks(wifiRunnable);
-    }
-
-   /* public void wifiToggling(){
-            if (wifimanager.isWifiEnabled()) {
-                wifiStatusText.setText("WiFi is ON");
-                wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                wifimanager.setWifiEnabled(true);
-            }
-            else {
-                wifiStatusText.setText("WiFi is OFF");
-                wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                wifimanager.setWifiEnabled(false);
-            }
-    }*/
-
     private Runnable updateTimerThread = new Runnable() {
         public void run() {
             timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
             tvTimer.setText(getDateFromMillis(timeInMilliseconds));
-            timerHandler.postDelayed(this, 1000);
+            timerHandler.postDelayed(this, 0);
         }
     };
 
-    private Runnable wifiRunnable = new Runnable() {
+    public class wifiRunnable implements Runnable{
+        private boolean nextState;
+        public wifiRunnable(boolean status){
+            this.nextState = status;
+        }
+        @Override
         public void run() {
-            if (wifimanager.isWifiEnabled()) {
+            wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (nextState) {
                 wifiStatusText.setText("WiFi is ON");
-                //wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                //wifimanager.setWifiEnabled(true);
+                wifimanager.setWifiEnabled(true);
+                nextState = false;
             } else {
                 wifiStatusText.setText("WiFi is OFF");
-                //wifimanager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                //wifimanager.setWifiEnabled(false);
+                wifimanager.setWifiEnabled(false);
+                nextState = true;
             }
-            wifiHandler.postDelayed(this, 1000 * Integer.valueOf(timeInterval.getText().toString()));
+            wifiHandler.postDelayed(this, 15000);
         }
-    };
+    }
 }
